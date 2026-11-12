@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>入口演示 · 项目详情页（按真实版式重构）</title>
+<style>
+  :root { --primary:#2b5ce6; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f4f6fb; color:#1a2233; padding-bottom:110px; }
+  .wrap { width:100%; max-width:1020px; margin:0 auto; padding:14px 16px; }
+
+  .demo-tip { background:#fff8e8; border:1px solid #f3e2bd; border-radius:12px; padding:10px 14px;
+    font-size:12.5px; color:#a4700f; line-height:1.8; margin-bottom:12px; }
+  .demo-tip b { color:#8a5b00; }
+
+  /* 顶栏 */
+  .nav { background:#fff; border:1px solid #e3e9ff; border-radius:12px; padding:10px 16px; display:flex; align-items:center; gap:16px; }
+  .logo { font-weight:800; color:var(--primary); font-size:15px; }
+  .nav .mi { font-size:13px; color:#5b6580; } .nav .mi.on { color:var(--primary); font-weight:700; }
+  .nav .right { margin-left:auto; font-size:11.5px; color:#9aa3c0; }
+
+  .pt-tabs { display:flex; gap:16px; margin-top:12px; font-size:13px; color:#5b6580; overflow-x:auto; }
+  .pt-tabs span { white-space:nowrap; padding-bottom:5px; cursor:pointer; }
+  .pt-tabs span.on { color:var(--primary); font-weight:700; border-bottom:2px solid var(--primary); }
+
+  .page { background:#fff; border:1px solid #e3e9ff; border-radius:14px; padding:16px 18px; margin-top:10px; }
+  h1 { font-size:18px; line-height:1.5; }
+  .addr { font-size:12px; color:#8a94b8; margin-top:5px; }
+
+  /* 项目跟踪时间轴 */
+  .tl { display:flex; align-items:flex-start; margin-top:14px; }
+  .tl-n { flex:1; position:relative; text-align:center; font-size:11px; color:#5b6580; }
+  .tl-n .dot { width:12px; height:12px; border-radius:50%; background:#fff; border:3px solid #c3cdea; margin:0 auto 5px; position:relative; z-index:2; }
+  .tl-n.past .dot { border-color:#9fb4e8; background:#dfe7fb; }
+  .tl-n.now .dot { border-color:var(--primary); background:var(--primary); }
+  .tl-n .bar { position:absolute; top:5px; left:0; right:0; height:2.5px; background:#e3e9fb; z-index:1; }
+  .tl-n.first .bar { display:none; }
+  .tl-n .nm { font-weight:700; color:#2b3a55; font-size:12px; }
+  .tl-n.now .nm { color:var(--primary); }
+  .tl-n .dt { margin-top:2px; }
+  .tl-n .cnt { margin-top:2px; color:#9aa3c0; }
+
+  /* 区块标题 + AI按钮 */
+  .sec-h { display:flex; align-items:center; gap:9px; margin:18px 0 10px; }
+  .sec-h::before { content:''; width:4px; height:15px; border-radius:2px; background:var(--primary); }
+  .sec-h h2 { font-size:15px; }
+  .btn-ai-s { background:linear-gradient(135deg,#3d6cf0,#2b5ce6); color:#fff; border:none; border-radius:8px;
+    padding:6px 13px; font-size:12px; cursor:pointer; box-shadow:0 3px 12px rgba(43,92,230,.28); display:inline-flex; align-items:center; gap:5px; }
+  .btn-ai-s:hover { filter:brightness(1.06); }
+
+  .news { display:grid; gap:7px; font-size:12.5px; color:#37425e; line-height:1.6; background:#fbfcff;
+    border:1px solid #edf1fd; border-radius:12px; padding:12px 14px; }
+  .news b { color:#22304e; }
+  .hint1 { margin-top:8px; font-size:11.5px; color:#c96a10; }
+
+  /* 项目介绍栅格 */
+  .igrid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0; border:1px solid #e8edf9; border-radius:12px; overflow:hidden; font-size:12px; }
+  .ig { display:flex; } .ig:nth-child(3n+2) { border-left:1px solid #eef2fa; } .ig:nth-child(3n+1) { border-bottom:1px solid #eef2fa; } .ig:nth-child(3n+2),.ig:nth-child(3n) { border-bottom:1px solid #eef2fa; }
+  .ig .k { width:88px; flex:none; background:#f7f9fe; color:#8a94b8; padding:8px 10px; }
+  .ig .v { flex:1; padding:8px 10px; color:#2b3a55; line-height:1.5; word-break:break-all; }
+  .ig .v.red { color:#d64545; }
+
+  .detail-txt { font-size:12.5px; color:#37425e; line-height:1.9; background:#fbfcff; border:1px solid #edf1fd; border-radius:12px; padding:12px 14px; }
+
+  /* 采购预测表 */
+  .ptable { width:100%; border-collapse:collapse; font-size:11.5px; border:1px solid #e3e9fb; border-radius:10px; overflow:hidden; }
+  .ptable th { background:#f0f4ff; color:#2b3a66; font-weight:700; padding:7px 9px; text-align:left; white-space:nowrap; }
+  .ptable td { border-top:1px solid #eef2fa; padding:7px 9px; color:#37425e; vertical-align:top; line-height:1.5; }
+  .ptable tr.hot td { background:#f2f8ff; }
+  .ptable .hl { color:var(--primary); font-weight:700; }
+  .conf { color:#168253; font-weight:700; }
+
+  /* 联系人区 */
+  .flt { display:flex; gap:8px; margin:10px 0 12px; }
+  .flt span { font-size:12px; border:1px solid #d8e3ff; background:#eef3ff; color:var(--primary); border-radius:999px; padding:4px 13px; cursor:pointer; }
+  .flt span.on2 { background:var(--primary); color:#fff; border-color:var(--primary); font-weight:700; }
+  .grp-t { font-size:13.5px; font-weight:800; color:#22304e; margin:14px 0 8px; display:flex; align-items:center; gap:7px; }
+  .grp-t small { font-weight:400; color:#9aa3c0; font-size:11px; }
+
+  .unit { background:linear-gradient(135deg,#f4f8ff,#fbfaff); border:1px solid #e0e8fb; border-radius:14px; padding:12px 14px; margin-bottom:10px; }
+  .unit .u1 { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+  .u-ico { width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,#7d9df2,#2b5ce6); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; flex:none; }
+  .u-nm { font-size:14.5px; font-weight:800; color:#22304e; }
+  .tag { font-size:10.5px; border-radius:6px; padding:1px 7px; }
+  .tag.so { background:#fff2d9; color:#a4700f; }
+  .tag.rp { background:#eef3ff; color:var(--primary); }
+  .tag.lock2 { background:#f3ecfd; color:#8a4bd8; }
+  .u-ops { margin-left:auto; display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+  .pill { font-size:11px; color:var(--primary); background:#fff; border:1px solid #d8e3ff; border-radius:999px; padding:3px 10px; cursor:pointer; }
+  .u-meta { margin-top:8px; font-size:11.5px; color:#8a94b8; line-height:1.7; }
+  .u-meta b { color:#37425e; font-weight:600; }
+
+  .kpgrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:9px; }
+  .kpc { background:#fff; border:1px solid #e8edf9; border-radius:13px; padding:11px 12px; display:flex; flex-direction:column; gap:6px; }
+  .kpc .h { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .kpc .nm { font-size:13.5px; font-weight:800; }
+  .kpc .vl { font-size:10.5px; color:#fff; background:#e34545; border-radius:4px; padding:0 4px; }
+  .kpc .du { font-size:11.5px; color:#2b3a55; }
+  .kpc .du::before { content:'职 '; color:#9aa3c0; font-size:10px; }
+  .kpc .ph { font-size:11.5px; color:#5b6580; }
+  .kpc .ph::before { content:'📱 '; font-size:10px; }
+  .kpc .ad { font-size:11px; color:#8a94b8; line-height:1.5; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .kpc .ad::before { content:'🏠 '; font-size:10px; }
+  .kpc .ops { display:flex; gap:6px; margin-top:2px; flex-wrap:wrap; align-items:center; }
+  .kpc .ops .pill { font-size:10.5px; padding:2px 8px; }
+  .btn-ice { margin-left:auto; background:#f0f4ff; color:var(--primary); border:1px solid #d8e3ff; border-radius:999px; padding:4px 11px; font-size:11.5px; cursor:pointer; }
+  .btn-ice:hover { background:var(--primary); color:#fff; }
+  .kpc.locked3 { background:#fbfaff; border-color:#e6e3f6; }
+  .kpc.locked3 .nm { color:#8a94b8; }
+
+  /* 侧拉抽屉（详情页不离开，点击按钮右滑出） */
+  .maskD { position:fixed; inset:0; background:rgba(23,32,58,.45); z-index:80; opacity:0; pointer-events:none; transition:opacity .25s; }
+  .maskD.show { opacity:1; pointer-events:auto; }
+  .drawerD { position:fixed; top:0; right:-560px; width:540px; max-width:100vw; height:100vh; background:#fff;
+    z-index:85; transition:right .28s ease; box-shadow:-14px 0 48px rgba(23,32,58,.25); display:flex; flex-direction:column; }
+  .drawerD.open { right:0; }
+  .dr-bar { display:flex; align-items:center; gap:8px; padding:8px 12px; background:#2b3a55; color:#fff;
+    font-size:12.5px; font-weight:700; flex:none; }
+  .dr-bar .esc { font-size:10.5px; font-weight:400; color:#b9c4dd; }
+  .dr-bar .x2 { margin-left:auto; cursor:pointer; font-size:15px; width:26px; height:26px; display:flex;
+    align-items:center; justify-content:center; border-radius:6px; }
+  .dr-bar .x2:hover { background:rgba(255,255,255,.15); }
+  .dr-frame { flex:1; border:none; width:100%; height:100%; }
+
+  /* 悬浮AI */
+  .fab { position:fixed; right:24px; bottom:36px; width:56px; height:56px; border-radius:50%;
+    background:linear-gradient(135deg,#6f9bff,#2b5ce6); color:#fff; display:flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:800; cursor:pointer; text-decoration:none; border:4px solid #fff;
+    box-shadow:0 8px 26px rgba(43,92,230,.45); animation:bob 2.4s ease-in-out infinite; z-index:50; }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+  .fab-tag { position:fixed; right:90px; bottom:50px; background:#22304e; color:#fff; font-size:11.5px;
+    border-radius:8px; padding:6px 10px; z-index:50; line-height:1.6; }
+  .lab { display:inline-block; font-size:10.5px; color:#8a94b8; margin-top:4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="demo-tip">
+    🎬 <b>四个 AI 按钮 + 侧拉抽屉 + 场景化手风琴：</b>① <b>项目介绍 / 项目详情</b>标题栏 →「AI总结项目重点」；② <b>单位卡（甲方/设计院/施工）</b> →「AI分析公司背景及商机」（问题随单位角色变化，应答表格随之不同）；③ <b>KP卡</b> →「AI破冰话术」（分对象、分渠道）。<b>所有按钮均为侧拉抽屉：详情页不走，右侧滑出，Esc/遮罩/✕关闭</b>；右下悬浮图标=冷启动（判定卡秒开）。弹窗内手风琴预置问题分「📄项目重点 / 🏢公司商机 / 🧊KP话术」三组，谁被点开自动展开对应组，其余折叠。
+  </div>
+
+  <div class="nav">
+    <span class="logo">中项网</span>
+    <span class="mi">开始搞钱</span><span class="mi on">项目信息</span><span class="mi">招投标</span><span class="mi">找客户</span><span class="mi">找人脉</span><span class="mi">找渠道</span>
+    <span class="right">示例会员企业 · L2 尊享版</span>
+  </div>
+
+  <div class="pt-tabs">
+    <span>项目跟踪</span><span>项目进展</span><span>招投标</span><span class="on">项目介绍</span><span>项目详情</span><span>项目联系人</span><span>项目备注</span><span>相关项目</span>
+  </div>
+
+  <div class="page">
+    <h1>呼图壁县165万千瓦光伏及储能一体化项目</h1>
+    <div class="addr">📍 新疆维吾尔自治区昌吉州呼图壁县 · 电力/能源工业 · 太阳能发电 · 非政府投资</div>
+
+    <!-- 项目跟踪 -->
+    <div class="sec-h"><h2>项目跟踪</h2></div>
+    <div class="tl">
+      <div class="tl-n first past"><div class="bar"></div><div class="dot"></div><div class="nm">立项备案</div><div class="dt">2026-05</div><div class="cnt">1个单位 · 2个联系人</div></div>
+      <div class="tl-n past"><div class="bar"></div><div class="dot"></div><div class="nm">勘察设计定标</div><div class="dt">2026-09-15</div><div class="cnt">1个单位 · 5个联系人</div></div>
+      <div class="tl-n now"><div class="bar"></div><div class="dot"></div><div class="nm">土建施工(当前)</div><div class="dt">2026-09 开工</div><div class="cnt">已更新抓取 · 电气设备采购窗口开启中</div></div>
+      <div class="tl-n"><div class="bar"></div><div class="dot"></div><div class="nm">设备采购挂网</div><div class="dt">规律推算·参考</div><div class="cnt">准确时点以招标公告为准</div></div>
+      <div class="tl-n"><div class="bar"></div><div class="dot"></div><div class="nm">全容量并网</div><div class="dt">预计2027-12</div><div class="cnt">&nbsp;</div></div>
+    </div>
+
+    <!-- 项目进展 -->
+    <div class="sec-h"><h2>项目进展</h2><span style="font-size:11px;color:#9aa3c0">2026-11-08 询问记录</span></div>
+    <div class="news">
+      <span>1. <b>手续办理情况：</b>该项目的备案、土地手续已办结完成。</span>
+      <span>2. <b>设计完成情况：</b>项目设计已完成，由中国电建集团贵阳勘测设计研究院有限公司负责。</span>
+      <span>3. <b>土建施工情况：</b>项目土建施工进行中，由中国核工业建设股份有限公司承担（施工总承包，待核实）。</span>
+      <span>4. <b>设备采购情况：</b>高压电气设备（主变、GIS、储能舱）集中采购窗口开启，主变基础已开工（2026-10-28调研回访）。</span>
+      <span>5. <b>项目变化情况：</b>无重大变化，工期与投资额暂未调整。</span>
+      <span class="hint1">● 跟进提示：高压电气设备集中采购窗口开启中——建议本月内完成设计院端参数影响，赶在挂网前进入短名单。</span>
+    </div>
+
+    <!-- 项目介绍 + AI总结 -->
+    <div class="sec-h"><h2>项目介绍</h2><button class="btn-ai-s" onclick="openAI('/form-match.html?sc=summary&q='+encodeURIComponent('帮我总结这个项目的重点，以及最值得我关注的采购机会'))">🪄 AI总结项目重点</button></div>
+    <div class="igrid">
+      <div class="ig"><span class="k">发布时间</span><span class="v">2026-11-11</span></div>
+      <div class="ig"><span class="k">信息版本</span><span class="v">5</span></div>
+      <div class="ig"><span class="k">项目性质</span><span class="v">新建</span></div>
+      <div class="ig"><span class="k">所属行业</span><span class="v">电力/能源工业</span></div>
+      <div class="ig"><span class="k">能源类型</span><span class="v">太阳能发电</span></div>
+      <div class="ig"><span class="k">预计总投资</span><span class="v red">约75亿元</span></div>
+      <div class="ig"><span class="k">投资性质</span><span class="v">非政府投资</span></div>
+      <div class="ig"><span class="k">资金到位</span><span class="v">部分到位</span></div>
+      <div class="ig"><span class="k">建设等级</span><span class="v">行业中标准</span></div>
+      <div class="ig"><span class="k">计划开工</span><span class="v">2026-09三季度</span></div>
+      <div class="ig"><span class="k">预计竣工</span><span class="v">2027-12四季度</span></div>
+      <div class="ig"><span class="k">所属省份</span><span class="v">新疆维吾尔自治区</span></div>
+      <div class="ig"><span class="k">所属地市州</span><span class="v">昌吉州呼图壁县</span></div>
+      <div class="ig"><span class="k">业主单位</span><span class="v">中石油新油（呼图壁）新能源有限公司</span></div>
+      <div class="ig"><span class="k">项目阶段</span><span class="v red">土建施工阶段</span></div>
+    </div>
+
+    <!-- 项目详情 + AI总结 -->
+    <div class="sec-h"><h2>项目详情</h2><button class="btn-ai-s" onclick="openAI('/form-match.html?sc=summary&q='+encodeURIComponent('总结项目详情里的关键信息，我该重点盯哪些设备采购？'))">🪄 AI总结项目重点</button></div>
+    <div class="detail-txt">
+      装机容量165万千瓦：建设内容主要由光伏阵列、升压站、集电线路、道路工程等组成；配套两座220kV升压站及165MW/330MWh电化学储能系统。<br>
+      项目占地面积约130,170公亩，其中永久占地约1.3万亩，场区用地以戈壁荒地为主。<br>
+      所需设备材料（节选）：光伏组件、光伏支架、逆变器、<b>220kV主变压器（≥4台）</b>、<b>高压开关柜/GIS（两座升压站配套）</b>、SVG无功补偿、储能电池舱、PCS、箱式变压器、电缆桥架、消防系统、空调暖通、监控也有等。
+    </div>
+    <span class="lab">↑ 生产环境：AI总结按钮挂在「项目介绍」「项目详情」区块标题栏；同一场景，种子问题口径不同（介绍=全景重点，详情=设备采购视角）</span>
+
+    <!-- AI预测采购需求 -->
+    <div class="sec-h"><h2>AI预测采购需求</h2><span style="font-size:11px;color:#9aa3c0">预测中设备打(?)为推荐，仅供购买前参考</span></div>
+    <table class="ptable">
+      <tr><th>采购设备名称</th><th>预计开始</th><th>预计结束</th><th>置信度</th><th>采购预测描述</th></tr>
+      <tr><td>集电线路</td><td>2026-08-06</td><td>2026-10-28</td><td class="conf">78%</td><td>光伏场区内集电线路与升压站35kV侧连接，随光伏区进度分段实施（项目已开工进场，历史采购3笔）</td></tr>
+      <tr><td>光伏支架</td><td>2026-08-07</td><td>2026-09-25</td><td class="conf">78%</td><td>支撑165万千瓦光伏序列，需在各类地形基础施工后穿插安装（项目已开工进场）</td></tr>
+      <tr><td>箱式变压器</td><td>2026-09-12</td><td>2026-10-01</td><td class="conf">78%</td><td>升压站内核心设备，将箱变经集电线路升压至35kV并网（项目已开工进场）</td></tr>
+      <tr class="hot"><td class="hl" style="cursor:pointer" onclick="openAI('/form-match.html?q='+encodeURIComponent('高压开关柜/GIS的采购预测依据是什么？82%置信度怎么理解？'))">高压开关柜/GIS ⚡</td><td>2026-12-01</td><td>2027-02-15</td><td class="conf">82%</td><td>两座220kV升压站配套，约0.9亿元——<b>与演示会员主营直接对口</b>，建议提前45天启动资质预审与排产</td></tr>
+      <tr><td style="cursor:pointer" onclick="openAI('/form-match.html?q='+encodeURIComponent('220kV主变的采购预测依据是什么？'))">220kV主变压器</td><td>2026-12-20</td><td>2027-03-01</td><td class="conf">80%</td><td>≥4台，约1.6亿元（非会员主营品类）</td></tr>
+    </table>
+    <span class="lab">↑ 预测口径：AI 依据品类历史采购节奏 × 项目当前进度推算，仅供<b>提前布局</b>参考；<b>准确时点以招标公告为准</b>——点品类名可追问预测依据（品类级公告提醒待招投标数据结构化后上线）</span>
+
+    <!-- 项目联系人 -->
+    <div class="sec-h"><h2>项目联系人</h2></div>
+    <div class="flt"><span class="on2">全部 3</span><span>甲方单位 1</span><span>设计院 1</span><span>施工单位 1</span></div>
+
+    <div class="grp-t">🏭 甲方单位 <small>（业主侧：直采主设备的拍板层级）</small></div>
+    <div class="unit">
+      <div class="u1">
+        <span class="u-ico">中</span>
+        <span class="u-nm">中石油新油（呼图壁）新能源有限公司</span>
+        <span class="tag so">央企·业主</span><span class="tag rp">标记合作</span>
+        <span class="u-ops">
+          <span class="pill">相关项目</span><span class="pill">人脉推荐</span>
+          <button class="btn-ai-s" onclick="openAI('/form-match.html?sc=company&q='+encodeURIComponent('帮我分析业主中石油新油（呼图壁）新能源有限公司的公司背景，并评估我的开关柜商机'))">🪄 AI分析公司背景及商机</button>
+        </span>
+      </div>
+      <div class="u-meta">单位地址：新疆维吾尔自治区昌吉州呼图壁县锦华大道北侧政务服务中心五楼 · <b>关联联系人 3</b> · 未竣工项目 1 · <b>在本项目角色：业主（主设备直采决策层）</b></div>
+      <div class="kpgrid">
+        <div class="kpc">
+          <div class="h"><span class="nm">孙**</span><span class="vl">NEW</span><span class="pill">显示全名(L2)</span></div>
+          <div class="du">施工负责人（影响人）</div>
+          <div class="ph">139****1111</div>
+          <div class="ad" title="新疆维吾尔自治区昌吉州呼图壁县锦华大道北侧">新疆昌吉州呼图壁县锦华大道北侧…</div>
+          <div class="ops">
+            <span class="pill">相关项目</span><span class="pill">标记人脉</span><span class="pill">人脉推荐</span>
+            <button class="btn-ice" onclick="openAI('/form-match.html?sc=ice&q='+encodeURIComponent('给孙战写一段首次电话破冰话术'))">🪄 AI破冰话术</button>
+          </div>
+        </div>
+        <div class="kpc locked3">
+          <div class="h"><span class="nm">待人工核验</span><span class="tag lock2">拍板人 · L3</span></div>
+          <div class="du">业主设备处主任（推断）</div>
+          <div class="ph">🔒 需人工核验服务</div>
+          <div class="ad">公告未披露 · 角色推断自业主组织架构</div>
+          <div class="ops">
+            <span class="pill">人脉推荐</span>
+            <button class="btn-ice" onclick="openAI('/form-match.html?sc=ice&q='+encodeURIComponent('拍板人怎么找到？怎么核验？'))">🪄 AI破冰话术</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grp-t">📐 设计院 <small>（参数关：设备工况与技术规范书）</small></div>
+    <div class="unit">
+      <div class="u1">
+        <span class="u-ico" style="background:linear-gradient(135deg,#7d9df2,#4a6fd8)">电</span>
+        <span class="u-nm">中国电建集团贵阳勘测设计研究院有限公司</span>
+        <span class="tag rp">设计院</span>
+        <span class="u-ops">
+          <span class="pill">相关项目</span>
+          <button class="btn-ai-s" onclick="openAI('/form-match.html?sc=company&q='+encodeURIComponent('帮我分析设计院中国电建集团贵阳勘测设计研究院的背景及商机'))">🪄 AI分析公司背景及商机</button>
+        </span>
+      </div>
+      <div class="u-meta">单位地址：贵州省贵阳市观山湖区兴黔路16号 · <b>关联联系人 1</b> · <b>在本项目角色：勘察设计中标（2026-09-15公告）</b></div>
+      <div class="kpgrid">
+        <div class="kpc">
+          <div class="h"><span class="nm">杨**</span><span class="pill">显示全名(L2)</span></div>
+          <div class="du">采购专员（影响人）</div>
+          <div class="ph">135****3333</div>
+          <div class="ad" title="贵州省贵阳市观山湖区兴黔路16号">贵州省贵阳市观山湖区兴黔路16号</div>
+          <div class="ops">
+            <span class="pill">标记人脉</span>
+            <button class="btn-ice" onclick="openAI('/form-match.html?sc=ice&q='+encodeURIComponent('给杨李君（贵阳院采购专员）写一段首次沟通话术，重点是锁开关柜工况参数'))">🪄 AI破冰话术</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grp-t">🏗 施工单位 <small>（分包关：配套柜类的采购通道）</small></div>
+    <div class="unit">
+      <div class="u1">
+        <span class="u-ico" style="background:linear-gradient(135deg,#5fd39a,#1f9e63)">核</span>
+        <span class="u-nm">中国核工业建设股份有限公司</span>
+        <span class="tag rp">施工总承包</span><span class="tag so">待核实</span>
+        <span class="u-ops">
+          <span class="pill">相关项目</span>
+          <button class="btn-ai-s" onclick="openAI('/form-match.html?sc=company&q='+encodeURIComponent('帮我分析施工单位中国核工业建设股份有限公司的背景及商机'))">🪄 AI分析公司背景及商机</button>
+        </span>
+      </div>
+      <div class="u-meta">单位地址：上海市上海城区青浦区蟠龙路500号 · <b>关联联系人 1</b> · <b>在本项目角色：施工总承包（2026-10-12公告）</b></div>
+      <div class="kpgrid">
+        <div class="kpc">
+          <div class="h"><span class="nm">冯**</span><span class="vl">NEW</span><span class="pill">显示全名(L2)</span></div>
+          <div class="du">采购专员（通道人）</div>
+          <div class="ph">137****2222</div>
+          <div class="ad" title="上海市上海城区青浦区蟠龙路500号">上海市上海城区青浦区蟠龙路500号</div>
+          <div class="ops">
+            <span class="pill">标记人脉</span><span class="pill">人脉推荐</span>
+            <button class="btn-ice" onclick="openAI('/form-match.html?sc=ice&q='+encodeURIComponent('给冯小兰写一段微信版破冰话术'))">🪄 AI破冰话术</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="lab">↑ 单位卡按钮 = 种子问题随单位角色变化（业主=直采决策 / 设计院=参数卡位 / 总包=分包通道），应答表格与攻关要点各不相同</span>
+  </div>
+</div>
+
+<a class="fab" onclick="openAI('/form-match.html')">AI</a>
+<div class="fab-tag">← 直接点图标：冷启动<br>（判定卡秒开，非空对话）</div>
+
+<!-- 侧拉抽屉：点击详情页任意 AI 按钮 → 右滑出，页面不离开 -->
+<div class="maskD" id="maskD" onclick="closeAI()"></div>
+<div class="drawerD" id="drawerD">
+  <div class="dr-bar">🪄 AI 介入评估 · 侧拉弹窗<span class="esc">Esc 或点遮罩关闭 · 详情页保持不走</span><span class="x2" onclick="closeAI()">✕</span></div>
+  <iframe class="dr-frame" id="aiFrame" src="about:blank"></iframe>
+</div>
+<script>
+function openAI(url){
+  document.getElementById('aiFrame').src = url;
+  document.getElementById('drawerD').classList.add('open');
+  document.getElementById('maskD').classList.add('show');
+}
+function closeAI(){
+  document.getElementById('drawerD').classList.remove('open');
+  document.getElementById('maskD').classList.remove('show');
+  setTimeout(()=>{ document.getElementById('aiFrame').src='about:blank'; }, 300);
+}
+window.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAI(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案D · AI介入评估（匹配判定+循证问答）</title>
+<style>
+  :root { --primary:#2b5ce6; --primary-dark:#1f47c5; --ok:#1f9e63; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:linear-gradient(160deg,#dfe7ff 0%,#eef1fb 40%,#f7f5ff 100%);
+    min-height:100vh; display:flex; justify-content:center; padding:18px 12px; color:#1a2233; }
+  .panel { width:100%; max-width:480px; background:linear-gradient(180deg,#f2f5ff,#fff 30%);
+    border-radius:20px; box-shadow:0 12px 48px rgba(43,92,230,.18); padding:16px 16px 12px; height:fit-content; }
+  .vers { position:fixed; bottom:14px; right:14px; z-index:60; display:flex; gap:6px; background:#fff;
+    border:1px solid #dbe4ff; border-radius:999px; padding:5px 8px; box-shadow:0 4px 18px rgba(43,92,230,.15); font-size:11.5px; flex-wrap:wrap; justify-content:center; }
+  .vers a { color:#5b6580; text-decoration:none; padding:3px 8px; border-radius:999px; }
+  .vers a.on { background:var(--primary); color:#fff; font-weight:600; }
+
+  .head { display:flex; align-items:center; gap:9px; }
+  .ai-badge { width:34px; height:34px; border-radius:10px; flex:none; background:linear-gradient(135deg,#6f9bff,#2b5ce6);
+    display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:12.5px; }
+  .head h1 { font-size:17px; }
+  .proj { font-size:12px; color:#5b6580; margin-top:3px; }
+  .demo-bar { position:absolute; top:14px; right:40px; font-size:11px; color:#5b6580; }
+  .demo-bar select { border:1px solid #ccd4ea; border-radius:6px; padding:1px 4px; font-size:11px; }
+
+  /* 判定卡 */
+  .verdict { margin-top:12px; background:#fff; border:1px solid #dfe8ff; border-radius:16px; padding:14px;
+    box-shadow:0 6px 20px rgba(43,92,230,.08); }
+  .v-row1 { display:flex; align-items:center; gap:12px; }
+  .ring { width:58px; height:58px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center;
+    background:conic-gradient(var(--primary) calc(var(--p)*1%), #e8edfb 0); position:relative; }
+  .ring::before { content:''; position:absolute; inset:5px; border-radius:50%; background:#fff; }
+  .ring .in { position:relative; text-align:center; }
+  .ring b { font-size:19px; color:var(--primary-dark); }
+  .ring small { display:block; font-size:8.5px; color:#8a94b8; margin-top:-2px; }
+  .v-main { flex:1; }
+  .v-main .t { font-size:16.5px; font-weight:800; color:#153b2b; }
+  .v-main .t em { font-style:normal; color:#0f7a4d; }
+  .v-main .s { font-size:11.5px; color:#5b6580; margin-top:3px; line-height:1.5; }
+  .win-pill { flex:none; background:#fff7ec; color:#a4700f; border:1px solid #f3e2bd; border-radius:10px;
+    padding:6px 10px; font-size:11.5px; text-align:center; line-height:1.5; }
+  .win-pill b { font-size:13px; }
+
+  .factors { margin-top:12px; display:grid; gap:7px; }
+  .fa { display:flex; align-items:center; gap:9px; background:#fbfcff; border:1px solid #edf1fc;
+    border-radius:11px; padding:8px 11px; cursor:pointer; transition:.15s; }
+  .fa:hover { border-color:var(--primary); background:#f6f9ff; }
+  .fa .fl { flex:none; width:62px; font-size:12.5px; font-weight:700; }
+  .fa .ft { flex:1; font-size:12px; color:#37425e; line-height:1.6; }
+  .fa .ft b { color:#2b3a55; }
+  .fa.f1 .fl { color:var(--primary); } .fa.f2 .fl { color:#c07b1a; } .fa.f3 .fl { color:#1f9e63; }
+  .fa .bar { flex:1; height:7px; border-radius:99px; background:#edf1f9; overflow:hidden; }
+  .fa .bar i { display:block; height:100%; border-radius:99px; }
+  .fa.f1 .bar i { background:linear-gradient(90deg,#7d9df2,#2b5ce6); }
+  .fa.f2 .bar i { background:linear-gradient(90deg,#f2c063,#e8971e); }
+  .fa.f3 .bar i { background:linear-gradient(90deg,#5fd39a,#1f9e63); }
+  .fa .fs { flex:none; width:44px; text-align:right; font-size:11.5px; color:#5b6580; font-variant-numeric:tabular-nums; }
+  .fa .fs b { color:#2b3a55; font-size:12.5px; }
+  .fa .why { flex:none; font-size:10.5px; color:#8a94b8; }
+  .fa:hover .why::after { content:' ▸ 问AI'; color:var(--primary); }
+  .caliber { margin-top:10px; font-size:10.5px; color:#9aa3c0; display:flex; align-items:center; gap:5px; }
+  .caliber .i { width:13px; height:13px; border-radius:50%; background:#eef1f9; color:#8a94b8; font-size:9px;
+    display:inline-flex; align-items:center; justify-content:center; cursor:help; }
+  .gapline { margin-top:10px; font-size:11.5px; color:#8a5b00; background:#fff8e8; border:1px dashed #ecd9a8;
+    padding:7px 10px; border-radius:9px; display:flex; align-items:center; gap:7px; line-height:1.6; }
+  .gapline b { color:#c07b1a; }
+  .mini2 { margin-left:auto; background:#fff; border:1px solid #ecd9a8; color:#a4700f; border-radius:999px;
+    padding:3px 10px; font-size:10.5px; cursor:pointer; flex:none; }
+
+  .nextact { margin-top:10px; background:#f4fbf7; border:1px solid #d3ecdd; border-radius:11px;
+    padding:8px 11px; font-size:12px; color:#245c40; line-height:1.65; display:flex; align-items:center; gap:8px; }
+  .nextact .tx { flex:1; }
+  .nextact b { color:#0f7a4d; }
+  .mini { flex:none; background:#fff; border:1px solid #bfe2cf; color:#168253; border-radius:999px;
+    padding:4px 10px; font-size:11px; cursor:pointer; }
+
+  /* 追问区 */
+  .chat { margin-top:13px; background:#fff; border:1px solid #e3e9ff; border-radius:16px; overflow:hidden; }
+  .chat-head { background:linear-gradient(135deg,#eaf1ff,#f3f0ff); padding:9px 14px; font-size:13.5px; font-weight:700;
+    color:#2b3a66; display:flex; align-items:center; gap:8px; }
+  .chat-head .live { margin-left:auto; font-size:11px; font-weight:400; color:#8a94b8; }
+  .msgs { height:300px; overflow-y:auto; padding:12px; display:grid; gap:10px; background:#fbfcff; align-content:start; }
+  .msg { max-width:90%; border-radius:14px; padding:9px 12px; font-size:13px; line-height:1.7; white-space:normal; word-break:break-word; }
+  .msg.user { justify-self:end; background:var(--primary); color:#fff; border-bottom-right-radius:4px; }
+  .msg.assistant { justify-self:start; background:#eef3ff; color:#22304e; border-bottom-left-radius:4px; }
+  .msg.assistant b { color:var(--primary-dark); }
+  .msg .meta { display:block; margin-top:6px; font-size:10.5px; color:#9aa3c0; line-height:1.5; }
+  .typing { justify-self:start; color:#8a94b8; font-size:13px; padding:4px 2px; }
+  .tool-status { grid-column:1/-1; display:inline-flex; align-items:center; gap:7px; justify-self:start; background:#f0f4ff;
+    border:1px solid #dbe4ff; color:var(--primary); font-size:12.5px; border-radius:999px; padding:5px 12px; width:fit-content; }
+  .spinner { width:13px; height:13px; border:2px solid #b9cbff; border-top-color:var(--primary); border-radius:50%; animation:spin .7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .chips { display:flex; gap:7px; overflow-x:auto; padding:9px 12px 3px; background:#fbfcff; }
+  .chip { flex:none; font-size:12px; color:var(--primary); background:#eef3ff; border:1px solid #d8e3ff;
+    border-radius:999px; padding:5px 11px; cursor:pointer; white-space:nowrap; }
+  .chip:hover { background:#e2ecff; }
+  .input-row { display:flex; gap:8px; padding:9px 12px 12px; background:#fbfcff; }
+  .input-row input { flex:1; border:1px solid #d6def5; border-radius:10px; padding:9px 12px; font-size:13.5px; outline:none; }
+  .input-row input:focus { border-color:var(--primary); }
+  .btn-send { background:linear-gradient(135deg,#3d6cf0,#2b5ce6); color:#fff; border:none; border-radius:10px; padding:0 16px; font-size:13.5px; cursor:pointer; }
+  .btn-send:disabled { opacity:.5; cursor:not-allowed; }
+  .foot-note { text-align:center; font-size:11px; color:#9aa3c0; padding:9px 0 2px; line-height:1.6; }
+
+  /* 表格化回答（竞品对话窗同款能力） */
+  .md-t { width:100%; border-collapse:collapse; margin:7px 0 4px; font-size:12px; background:#fff; border:1px solid #dbe4f7; border-radius:8px; overflow:hidden; }
+  .md-t th { background:linear-gradient(135deg,#3d6cf0,#2b5ce6); color:#fff; font-weight:600; padding:6px 9px; text-align:left; font-size:11.5px; white-space:nowrap; }
+  .md-t td { border-bottom:1px solid #e8edf9; padding:6px 9px; vertical-align:top; color:#37425e; line-height:1.55; }
+  .md-t tr:last-child td { border-bottom:none; }
+  .md-ul,.md-ol { margin:3px 0; padding-left:19px; }
+  .md-ul li,.md-ol li { margin:3px 0; }
+  .md-p { margin:2px 0; }
+  .aigc { margin-top:7px; font-size:10.5px; color:#c96a10; }
+  .fb { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+  .fb span { font-size:11px; color:#8a94b8; background:#f4f6fc; border:1px solid #e8edf9; border-radius:7px; padding:3px 9px; cursor:pointer; user-select:none; }
+  .fb span:hover { color:var(--primary); border-color:#c9d7f5; }
+  .fb span.act { color:var(--primary); border-color:var(--primary); background:#eef3ff; }
+  .scope { flex:none; border:1.5px solid var(--primary); color:var(--primary); background:#eef3ff; border-radius:999px; padding:7px 10px; font-size:12px; cursor:pointer; white-space:nowrap; }
+  .scope:not(.on) { border-color:#c9d2e8; color:#8a94b8; background:#f2f4fb; }
+  /* 场景化预置问题（手风琴） */
+  .acc { background:#fbfcff; border-top:1px solid #edf1fd; }
+  .acc-g + .acc-g { border-top:1px solid #edf1fd; }
+  .acc-h { display:flex; align-items:center; gap:6px; padding:8px 13px; font-size:12px; font-weight:700; color:#2b3a66; cursor:pointer; user-select:none; }
+  .acc-h .hint2 { font-weight:400; font-size:10.5px; color:#9aa3c0; }
+  .acc-h .chev { margin-left:auto; color:#8a94b8; font-size:12px; transition:transform .2s; }
+  .acc-g.closed .acc-h { background:#f6f8fd; }
+  .acc-g.closed .chev { transform:rotate(-90deg); }
+  .acc-b { display:flex; flex-wrap:wrap; gap:7px; padding:2px 12px 11px; }
+  .acc-g.closed .acc-b { display:none; }
+  .toast { position:fixed; bottom:56px; left:50%; transform:translateX(-50%); background:#22304e; color:#fff;
+    font-size:12.5px; border-radius:10px; padding:10px 16px; z-index:90; display:none; max-width:86vw; line-height:1.6; text-align:center; }
+</style>
+</head>
+<body>
+<div class="panel">
+  <div class="demo-bar">演示 <select id="levelSel"><option value="L2">L2 尊享</option><option value="L1">L1 基础</option></select>
+    <span id="modeTag" style="color:#9aa3c0"></span></div>
+  <div class="head">
+    <div class="ai-badge">AI</div>
+    <div>
+      <h1>AI 介入评估</h1>
+      <div class="proj">呼图壁县165万千瓦光伏及储能一体化项目 · 土建施工阶段</div>
+    </div>
+  </div>
+
+  <!-- 判定卡（事实卡）：只陈述可溯源事实与标注口径的估算，不放未校准评分 -->
+  <div class="verdict">
+    <div class="v-row1">
+      <div class="v-main">
+        <div class="t">可以介入 · <em>与主营直接对口</em></div>
+        <div class="s">结论只依据下方三条可溯源事实 · 点任意一行带依据追问</div>
+      </div>
+      <div class="win-pill" title="所有结论基于该口径的项目调研库；预测类信息已收敛，准确时点以招标公告为准">📅 数据口径<br><b>2026-10-28 调研</b></div>
+    </div>
+
+    <div class="factors">
+      <div class="fa f1" onclick="askFactor(1)" title="品类对接依据">
+        <span class="fl">能不能进</span>
+        <span class="ft">开关柜<b>直接对口</b>——两座220kV升压站配套（调研库）；估算盘子约0.9亿元（经验系数估算口径）；历史中标品类命中</span>
+        <span class="why">依据 ▸</span>
+      </div>
+      <div class="fa f2" onclick="askFactor(2)" title="采购时窗依据">
+        <span class="fl">什么时候</span>
+        <span class="ft">电气设备采购<b>窗口开启中</b>——10-28调研回访：主变基础已开工（实证）；同类规律"土建开工后3-5个月进入挂网高峰"仅供排期参考，<b>准确时点以招标公告为准</b></span>
+        <span class="why">依据 ▸</span>
+      </div>
+      <div class="fa f3" onclick="askFactor(3)" title="KP通路依据">
+        <span class="fl">找谁进</span>
+        <span class="ft">已核验KP <b>3人</b>（公告联系人栏溯源）；拍板人未披露→建议L3人工核验；建议首触杨李君锁工况、孙战线通总包</span>
+        <span class="why">依据 ▸</span>
+      </div>
+    </div>
+    <div class="caliber">口径：弹窗不使用未校准评分；以上数字均来自公告/调研回访/周期规律库，估算值带口径标注
+      <span class="i" title="可信度设计：① 结论=从调研库推出的定性判断，不产出未经校准的权重评分；② 所有数字要么来自公告与调研回访，要么标注估算口径；③ AI 只解释事实、承接追问，不编造数字。评分机制仅保留在跨项目排序与内部回测，校准前不进客户界面。">ⓘ</span></div>
+  </div>
+
+  <div class="nextact">
+    <div class="tx">📌 建议：<b>杨李君（贵阳院）锁工况</b> → <b>孙战线通总包</b> → 拍板人人工核验兜底</div>
+    <span class="mini" onclick="ask('把建议动作展开成一份带顺序的拜访剧本：先找谁、说什么、怎么引荐到下一个人')">展开成剧本</span>
+  </div>
+
+  <!-- 自由问答：工具循证 + 流式 + 溯源标注 -->
+  <div class="chat">
+    <div class="chat-head">💬 匹配追问 · 自由提问<span class="live" id="sessionInfo"></span></div>
+    <div class="msgs" id="msgs"></div>
+  <!-- 场景化预置问题（手风琴）：入口场景决定默认展开组 -->
+  <div class="acc">
+    <div class="acc-g" id="acc-summary">
+      <div class="acc-h" onclick="togAcc('acc-summary')">📄 项目重点 · 预置问题<span class="chev">⌄</span></div>
+      <div class="acc-b">
+        <span class="chip" onclick="ask('这个项目最值得我关注的三点是什么？')">最值得关注的三点</span>
+        <span class="chip" onclick="ask('所需设备清单里哪些和我的产品有关？')">设备清单×我的产品</span>
+        <span class="chip" onclick="ask('这个项目接下来的采购节奏和窗口期怎么走？')">采购节奏与窗口</span>
+      </div>
+    </div>
+    <div class="acc-g closed" id="acc-company">
+      <div class="acc-h" onclick="togAcc('acc-company')">🏢 公司商机 · 预置问题<span class="chev">⌄</span></div>
+      <div class="acc-b">
+        <span class="chip" onclick="ask('哪些采购走业主直采，哪些走总包分包？')">直采 vs 分包通道</span>
+        <span class="chip" onclick="ask('业主单位的资信情况怎么样？')">业主资信</span>
+        <span class="chip" onclick="ask('设计院的背景和它对选型的影响力？')">设计院影响力</span>
+      </div>
+    </div>
+    <div class="acc-g closed" id="acc-ice">
+      <div class="acc-h" onclick="togAcc('acc-ice')">🧊 KP话术 · 预置问题<span class="chev">⌄</span></div>
+      <div class="acc-b">
+        <span class="chip" onclick="ask('给孙战写一段首次电话破冰话术')">孙战·电话破冰</span>
+        <span class="chip" onclick="ask('给冯小兰写一段微信版破冰话术')">冯小兰·微信破冰</span>
+        <span class="chip" onclick="ask('拍板人怎么找到？怎么核验？')">拍板人·怎么够到</span>
+      </div>
+    </div>
+  </div>
+    <div class="input-row">
+      <button class="scope on" id="scopeBtn" onclick="toggleScope()" title="锁定AI的取数范围，防止跨项目串答">🎯 当前项目问答</button>
+      <input id="q" placeholder="用你的话问，如：只关心开关柜" onkeydown="if(event.key==='Enter')send()">
+      <button class="btn-send" id="sendBtn" onclick="send()">发送</button>
+    </div>
+  </div>
+  <div class="foot-note">AI 回答基于项目调研库与周期规律推算，重要决策请人工复核</div>
+</div>
+
+<div class="vers">
+  <a href="/index.html">基线</a><a href="/form-action.html">A</a>
+  <a href="/form-roadmap.html">B</a><a href="/form-radar.html">C</a>
+  <a href="/form-match.html" class="on">★ 终版D</a>
+</div>
+
+<script>
+const PROJECT_ID='xm-hutubi-165';
+let sessionId=null, busy=false, toolCount=0, curAssistant=null;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* 轻量 Markdown 渲染：表格 / 无序及有序列表 / 段落 / 加粗（流式期间逐块重建） */
+function mdLite(src){
+  const b=s=>s.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+  const row=l=>l.replace(/^\||\|$/g,'').split('|').map(x=>b(x.trim()));
+  const parts=esc(src).split(/\n{2,}/); let out='';
+  for(const p of parts){
+    const ls=p.split('\n').filter(x=>x.trim()!=='');
+    if(!ls.length) continue;
+    if(ls.length>=2 && ls.every(l=>l.startsWith('|')) && ls[1].replace(/[|\s:\-]/g,'')===''){
+      out+='<table class="md-t"><thead><tr>'+row(ls[0]).map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'
+          +ls.slice(2).map(l=>'<tr>'+row(l).map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+    } else if(ls.every(l=>/^- /.test(l))){
+      out+='<ul class="md-ul">'+ls.map(l=>'<li>'+b(l.slice(2))+'</li>').join('')+'</ul>';
+    } else if(ls.every(l=>/^\d+\. /.test(l))){
+      out+='<ol class="md-ol">'+ls.map(l=>'<li>'+b(l.replace(/^\d+\. /,''))+'</li>').join('')+'</ol>';
+    } else {
+      out+='<p class="md-p">'+ls.map(b).join('<br>')+'</p>';
+    }
+  }
+  return out;
+}
+
+/* 点事实行 → 带依据追问（只问事实与口径，不问"为什么给分"） */
+const FACTOR_Q=[
+  null,
+  '说开关柜直接对口的依据是什么？0.9亿的盘子是怎么估出来的？我的车、空调还值不值得跟？',
+  '说"采购窗口开启中"的判断依据是什么？开关柜大概什么时候挂网？现在备货来得及吗？',
+  '现在能直接接触到谁？走哪条链路能最快够到拍板人？'];
+function askFactor(i){ ask(FACTOR_Q[i]); }
+
+async function ask(q){
+  if(busy) return;
+  busy=true; toolCount=0;
+  document.getElementById('sendBtn').disabled=true;
+  addMsg('user',esc(q).replace(/\n/g,'<br>'));
+  const typing=document.createElement('div'); typing.className='typing'; typing.id='typing'; typing.textContent='思考中…';
+  const box=document.getElementById('msgs'); box.appendChild(typing); box.scrollTop=box.scrollHeight;
+  const level=document.getElementById('levelSel').value;
+  const url=`/api/chat/stream?projectId=${PROJECT_ID}&memberLevel=${level}`+(sessionId?`&sessionId=${encodeURIComponent(sessionId)}`:'')+`&message=${encodeURIComponent(q)}`;
+  let text=''; curAssistant=null;
+  try{
+    const resp=await fetch(url); const reader=resp.body.getReader(); const dec=new TextDecoder(); let buf='';
+    while(true){
+      const {done,value}=await reader.read(); if(done) break;
+      buf+=dec.decode(value,{stream:true}); const parts=buf.split('\n\n'); buf=parts.pop();
+      for(const p of parts){
+        const line=p.split('\n').find(l=>l.startsWith('data:')); if(!line) continue;
+        let ev; try{ ev=JSON.parse(line.slice(5).trim()); }catch{ continue; }
+        if(ev.type==='session'){ sessionId=ev.sessionId; document.getElementById('sessionInfo').textContent='会话 '+ev.sessionId.split(':').pop(); }
+        else if(ev.type==='tool_start'){ typing.remove(); setToolStatus(ev.label); }
+        else if(ev.type==='tool_end'){ clearToolStatus(); toolCount++; typing.remove(); if(!curAssistant) curAssistant=addMsg('assistant',''); }
+        else if(ev.type==='text_delta'){ typing.remove(); clearToolStatus(); if(!curAssistant) curAssistant=addMsg('assistant',''); text+=ev.content; curAssistant.innerHTML=mdLite(text); box.scrollTop=box.scrollHeight; }
+        else if(ev.type==='done'){
+          if(curAssistant&&toolCount){
+            const m=document.createElement('span'); m.className='meta';
+            m.textContent=`✓ 依据 ${toolCount} 项项目数据 · 口径 2026-10-28 · 可溯源`;
+            curAssistant.appendChild(m);
+          }
+          if(curAssistant) attachFeedback(curAssistant,q);
+          if(!curAssistant) addMsg('assistant','（本次无文本输出）');
+        }
+        else if(ev.type==='error'){ typing.remove(); clearToolStatus(); addMsg('assistant','⚠️ '+esc(ev.message)); }
+      }
+    }
+  }catch(e){ typing.remove(); clearToolStatus(); addMsg('assistant','⚠️ 连接中断：'+esc(String(e))); }
+  finally{ const t=document.getElementById('typing'); if(t) t.remove(); busy=false; document.getElementById('sendBtn').disabled=false; box.scrollTop=box.scrollHeight; }
+}
+function addMsg(role,html){
+  const box=document.getElementById('msgs'); const el=document.createElement('div');
+  el.className='msg '+role; el.innerHTML=html; box.appendChild(el); box.scrollTop=box.scrollHeight; return el;
+}
+function setToolStatus(label){
+  clearToolStatus(); const box=document.getElementById('msgs'); const el=document.createElement('div');
+  el.className='tool-status'; el.id='toolStatus'; el.innerHTML=`<span class="spinner"></span> 正在查：${esc(label)}…`;
+  box.appendChild(el); box.scrollTop=box.scrollHeight;
+}
+function clearToolStatus(){ const el=document.getElementById('toolStatus'); if(el) el.remove(); }
+function send(){ const i=document.getElementById('q'); const q=i.value.trim(); if(!q||busy) return; i.value=''; ask(q); }
+
+fetch('/api/health').then(r=>r.text()).then(t=>{ document.getElementById('modeTag').textContent=t.includes('real')?'· 真实模型':'· 脚本演示'; }).catch(()=>{});
+
+/* 入口即剧本（场景化）：sc=summary|company|ice 决定默认种子问题 + 手风琴展开组 */
+const params = new URLSearchParams(location.search);
+const sc = params.get('sc');
+const SCENARIO_SEED = {
+  summary: '帮我总结这个项目的重点，以及最值得我关注的采购机会',
+  company: '帮我分析业主中石油新油（呼图壁）新能源有限公司的公司背景，并评估我的开关柜商机',
+  ice:     '给孙战写一段首次电话破冰话术'
+};
+const GROUP_OF = { summary:'acc-summary', company:'acc-company', ice:'acc-ice' };
+const seeded = params.get('q') || SCENARIO_SEED[sc] || null;
+function togAcc(id, forceOpen){
+  const g = document.getElementById(id);
+  const wasClosed = g.classList.contains('closed');
+  document.querySelectorAll('.acc-g').forEach(x=>x.classList.add('closed'));
+  if (wasClosed || forceOpen===true) g.classList.remove('closed');
+}
+togAcc(GROUP_OF[sc] || 'acc-summary', true);
+if (seeded) setTimeout(()=>ask(seeded), 400);
+
+/* —— 采自竞品对话窗的四个增强：AIGC提示行 / 👍👎反馈 / 导出 / 范围chip —— */
+function attachFeedback(el,q){
+  if(el.querySelector('.fb')) return;
+  const warn=document.createElement('div'); warn.className='aigc';
+  warn.textContent='⚠ 本回答由AI生成，内容仅供参考，请自行筛选及确认';
+  const fb=document.createElement('div'); fb.className='fb';
+  const up=document.createElement('span'); up.textContent='👍 有帮助';
+  const dn=document.createElement('span'); dn.textContent='👎 不准确';
+  const dl=document.createElement('span'); dl.textContent='⬇ 导出';
+  fb.append(up,dn,dl);
+  el.append(warn,fb);
+  up.onclick=()=>{ pick(up,fb); toast('✅ 已记录，回答将进入优质样例池（喂给评测回归）'); };
+  dn.onclick=()=>{ pick(dn,fb); toast('已记录 👎，将进入 badcase 回流标注，接入百炼评分工作流批量回归'); };
+  dl.onclick=()=>{
+    const clone=el.cloneNode(true);
+    const f=clone.querySelector('.fb'); if(f) f.remove();
+    const txt='【AI 介入评估 · 问答导出】\n项目：呼图壁县165万千瓦光伏及储能一体化项目\n数据口径：2026-10-28（中项网调研库）\n\n问：'+q+'\n\n答：'+clone.innerText;
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));
+    a.download='AI解答-'+q.slice(0,14).replace(/[\\/:*?"<>|]/g,'')+'.txt';
+    a.click(); URL.revokeObjectURL(a.href);
+    toast('已导出文本版（生产版为 PDF：含 logo、口径页脚与溯源链接）');
+  };
+}
+function pick(btn,fb){ fb.querySelectorAll('span').forEach(s=>s.classList.remove('act')); btn.classList.add('act'); }
+let toastTimer=null;
+function toast(msg){
+  let t=document.getElementById('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast'; t.className='toast'; document.body.appendChild(t); }
+  t.textContent=msg; t.style.display='block';
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.style.display='none',3600);
+}
+let scopeCurrent=true;
+function toggleScope(){
+  scopeCurrent=!scopeCurrent;
+  const btn=document.getElementById('scopeBtn');
+  btn.classList.toggle('on',scopeCurrent);
+  btn.textContent=scopeCurrent?'🎯 当前项目问答':'🌐 跨项目咨询';
+  toast(scopeCurrent?'已锁定当前项目：工具只取本项目数据，不会跨项目串答':'演示环境仍基于当前项目数据（P1 起支持跨项目检索与对比）');
+}
+</script>
+</body>
+</html>
