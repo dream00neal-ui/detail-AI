@@ -263,6 +263,47 @@ const FACTOR_Q=[
   '现在能直接接触到谁？走哪条链路能最快够到拍板人？'];
 function askFactor(i){ ask(FACTOR_Q[i]); }
 
+/* ===== 离线演示模式：无后端（如 GitHub Pages 部署）时，内置脚本应答 ===== */
+let offline=false;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function pickDemo(q){
+  const R=[
+    [/(话术|破冰|开口|微信|怎么聊|怎么说)/,
+     '**给孙战的首次电话破冰话术**（施工负责人·影响人）\n\n"孙总您好，我是XX电气的小X。呼图壁那个165万千瓦光伏项目，听说土建您这边在牵头？我们做高低压开关柜，两座220kV升压站那批柜子，想跟您对一下进场节奏——不推产品，就想知道总包采购计划里柜子大概什么时候定标，我们好提前备产能和资质文件。您方便的话，我发一份我们给贵阳院备案过的参数资料？"\n\n要点：①自报家门+项目锚定 ②不推产品先对节奏 ③留一个轻钩子（发参数资料）。\n\n微信版更短："孙总好，呼图壁光伏项目请教下：开关柜定标节奏大概何时？我们做这块，想提前备资质。"'],
+    [/(拍板人|找谁|拜访|决策|谁说了算|联系谁)/,
+     '**介入路径：三层递进**\n\n| 层级 | 人 | 角色 | 当前动作 |\n|---|---|---|---|\n| 通道层 | 孙战 | 施工负责人（影响人） | 先通施工线摸总包采购节奏 |\n| 参数层 | 杨李君 | 贵阳院·设计选型 | 锁工况参数进技术规范书 |\n| 拍板层 | 待核验 | 业主设备处（推断） | 公告未披露→L3人工核验服务 |\n\n建议顺序：杨李君锁工况 → 孙战线通总包 → 拍板人核验兜底。拍板人为角色推断（口径：推断自业主组织结构，非实证）。'],
+    [/(挂网|窗口|节奏|什么时候|时间|来得及|备货|采购期)/,
+     '**窗口判断（三层口径）**\n\n- **实证**：2026-10-28 调研回访确认"高压电气设备集中采购窗口开启中"，主变基础已开工\n- **规律**：同类光伏项目开工后 3-5 个月进入主设备挂网高峰（周期规律库·参考）\n- **预测**：高压开关柜 2026-12 至 2027-02（置信度82%·待核验）\n\n结论：现在处于"窗口开启中"——建议本月内完成设计院端参数影响，赶在挂网前进入短名单。**准确时点以招标公告为准。**'],
+    [/(依据|置信度|82|怎么算|怎么估|0\.9亿|盘子|规模|金额|多大)/,
+     '**82%置信度是什么口径？**\n\n| 项 | 数值 | 口径 |\n|---|---|---|\n| 高压开关柜/GIS | 约0.9亿元 · 置信度82% | AI预测·待核验 |\n| 220kV主变 ≥4台 | 约1.6亿元 · 置信度80% | AI预测·待核验（非会员主营） |\n\n坦白说：82%来自历史同类项目"两座220kV升压站×单站配套规模"的规律推算，**不是承诺**——它只说明规律命中概率，具体以招标公告为准。0.9亿是按升压站配套系数的估算值。判定卡原则：估算必带口径，宁可少给一个数，不给一个错的数。'],
+    [/(主营|匹配|对口|我的产品|开关柜怎么样|能不能进|能不能介入)/,
+     '**与主营匹配（演示会员：开关柜/车/空调）**\n\n| 品类 | 匹配 | 依据 |\n|---|---|---|\n| 高压开关柜/GIS | ● 直接对口 | 两座220kV升压站配套·约0.9亿（估算） |\n| 汽车灯塔车 | ○ 可关注 | 施工高峰期临时用电需求 |\n| 工业空调 | ○ 可关注 | 升压站/储能舱环控需求 |\n\n结论：可以介入，主推开关柜，车/空调作次级跟进。'],
+    [/(电话|联系方式|号码|怎么联系)/,
+     '**联系方式（L1 视角）**：孙战 139****1111（已遮蔽）。\n\nL2 会员可查看完整号码与职务；拍板人层级信息需 L3 人工核验。分级口径：联系方式属于付费解锁字段，不在免费问答中展示。'],
+    [/(提醒|订阅|推送|通知)/,
+     '公告窗口提醒**尚未上线**。上线前提：招投标数据结构化后稳定提取品类、品牌、公告时间三字段（否则提醒会变成"狼来了"）。当前建议：把该项目加入手动跟踪清单，阶段变更时平台会提示。'],
+    [/(背景|资信|公司|业主实力|中石油)/,
+     '**业主背景：中石油新油（呼图壁）新能源有限公司**\n\n| 维度 | 内容 |\n|---|---|\n| 性质 | 央企背景·业主直采 |\n| 在建 | 未竣工项目 1 个 |\n| 商机评估 | 与主营直接对口·可以介入 |\n\n业主侧拍板层级清晰（设备处），直采决策链短——对设备商比地产类业主友好。'],
+    [/(重点|三点|总结|速读|关注什么)/,
+     '**呼图壁 165万千瓦光伏项目 · 速读**\n\n| 三问 | 答案 |\n|---|---|\n| 能不能进 | 开关柜直接对口·约0.9亿盘子（估算口径） |\n| 什么时候 | 采购窗口开启中（10-28调研实证）· 同类规律开工后3-5个月挂网 |\n| 找谁进 | 杨李君（贵阳院）锁工况 → 孙战线通总包 → 拍板人待核验 |\n\n最值得关注的采购机会：高压开关柜/GIS（82%）、220kV主变≥4台（1.6亿·非主营）。'],
+  ];
+  for(const [re,ans] of R) if(re.test(q)) return ans;
+  return R[R.length-1][1];
+}
+async function demoAnswer(q){
+  const t=document.getElementById('typing'); if(t) t.textContent='正在查：项目事实（离线内置）…';
+  await sleep(600);
+  const t2=document.getElementById('typing'); if(t2) t2.remove();
+  clearToolStatus();
+  const ans=pickDemo(q);
+  const el=addMsg('assistant','');
+  for(let i=0;i<ans.length;i+=8){ el.innerHTML=mdLite(ans.slice(0,i+8)); const box=document.getElementById('msgs'); box.scrollTop=box.scrollHeight; await sleep(20); }
+  el.innerHTML=mdLite(ans);
+  const m=document.createElement('span'); m.className='meta';
+  m.textContent='离线演示 · 内置脚本应答（本地跑后端即为 AI 循证回答）';
+  el.appendChild(m); attachFeedback(el,q);
+}
+
 async function ask(q){
   if(busy) return;
   busy=true; toolCount=0;
@@ -274,7 +315,11 @@ async function ask(q){
   const url=`/api/chat/stream?projectId=${PROJECT_ID}&memberLevel=${level}`+(sessionId?`&sessionId=${encodeURIComponent(sessionId)}`:'')+`&message=${encodeURIComponent(q)}`;
   let text=''; curAssistant=null;
   try{
-    const resp=await fetch(url); const reader=resp.body.getReader(); const dec=new TextDecoder(); let buf='';
+    const resp=await fetch(url);
+    if(offline || !resp.ok || !(resp.headers.get('content-type')||'').includes('event-stream')){
+      await demoAnswer(q); return;
+    }
+    const reader=resp.body.getReader(); const dec=new TextDecoder(); let buf='';
     while(true){
       const {done,value}=await reader.read(); if(done) break;
       buf+=dec.decode(value,{stream:true}); const parts=buf.split('\n\n'); buf=parts.pop();
@@ -297,7 +342,7 @@ async function ask(q){
         else if(ev.type==='error'){ typing.remove(); clearToolStatus(); addMsg('assistant','⚠️ '+esc(ev.message)); }
       }
     }
-  }catch(e){ typing.remove(); clearToolStatus(); addMsg('assistant','⚠️ 连接中断：'+esc(String(e))); }
+  }catch(e){ typing.remove(); clearToolStatus(); if(offline||location.protocol==='https:'){ await demoAnswer(q); } else { addMsg('assistant','⚠️ 连接中断：'+esc(String(e))); } }
   finally{ const t=document.getElementById('typing'); if(t) t.remove(); busy=false; document.getElementById('sendBtn').disabled=false; box.scrollTop=box.scrollHeight; }
 }
 function addMsg(role,html){
@@ -312,7 +357,7 @@ function setToolStatus(label){
 function clearToolStatus(){ const el=document.getElementById('toolStatus'); if(el) el.remove(); }
 function send(){ const i=document.getElementById('q'); const q=i.value.trim(); if(!q||busy) return; i.value=''; ask(q); }
 
-fetch('/api/health').then(r=>r.text()).then(t=>{ document.getElementById('modeTag').textContent=t.includes('real')?'· 真实模型':'· 脚本演示'; }).catch(()=>{});
+fetch('/api/health').then(r=>r.text().then(t=>{offline=!r.ok; document.getElementById('modeTag').textContent= r.ok ? (t.includes('real')?'· 真实模型':'· 脚本演示') : '· 离线演示';})).catch(()=>{offline=true; document.getElementById('modeTag').textContent='· 离线演示';});
 
 /* 入口即剧本（场景化）：sc=summary|company|ice 决定默认种子问题 + 手风琴展开组 */
 const params = new URLSearchParams(location.search);
